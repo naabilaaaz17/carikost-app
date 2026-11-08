@@ -164,8 +164,7 @@ Cara mengamati tiap state: loading dengan Network → Slow 3G; error GET dengan 
 
 ## Pendekatan dan alat
 
-- **Alat AI:** Claude [[tambahkan alat lain yang dipakai, misalnya Cursor / Claude Code]].
-- **Urutan kerja:** (1) tampilan beranda dan halaman pendukung dengan data sample, (2) kontrak API (bentuk respons, status code, format error) sebelum menulis kode, (3) dua route handler, (4) hubungkan frontend lengkap dengan semua state, (5) skrip tes API.
+- **Alat AI:** Claude, ChatGPT
 - **Verifikasi:** `scripts/test-api.mjs` menjalankan 13 pemeriksaan (200, 400, 409, 500, 201), ditambah pengecekan manual di Network tab dan terminal server.
 
 ## Keputusan penting
