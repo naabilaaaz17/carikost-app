@@ -6,9 +6,10 @@ import { CITY_OPTIONS, kosList } from "../data/kos";
 import { getFinalPrice } from "../lib/format";
 import dynamic from "next/dynamic";
 
+
 const KosMap = dynamic(() => import("./KosMap"), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse rounded-2xl bg-brand-100" />,
+  loading: () => <div className="h-full w-full animate-pulse rounded-2xl bg-brand-50" />,
 });
 
 const TYPES = ["Semua", "Putra", "Putri", "Campur"];

@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { CITY_OPTIONS } from "../data/kos";
+
+// Form ini hanya tampilan (tidak memanggil API). Pengiriman data ke server
+// hanya lewat POST /api/survey (form "Ajukan survei"), sesuai batas dua endpoint.
+
 const INITIAL = {
   owner: "",
   phone: "",
@@ -30,7 +34,7 @@ function Label({ text, children }) {
 
 export default function PromoteForm() {
   const [form, setForm] = useState(INITIAL);
-  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+  const [status, setStatus] = useState("idle"); // idle | sending | sent
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -44,14 +48,9 @@ export default function PromoteForm() {
     e.preventDefault();
     if (form.periods.length === 0) return;
     setStatus("sending");
-    try {
-      // TODO: ganti dengan kirim ke backend, mis.
-      // await fetch("/api/promosi", { method: "POST", body: JSON.stringify(form) });
-      await new Promise((r) => setTimeout(r, 600));
-      setStatus("sent");
-    } catch {
-      setStatus("error");
-    }
+    // Simulasi pengiriman (tanpa backend).
+    await new Promise((r) => setTimeout(r, 600));
+    setStatus("sent");
   };
 
   if (status === "sent") {
@@ -176,12 +175,6 @@ export default function PromoteForm() {
           />
         </Label>
       </fieldset>
-
-      {status === "error" && (
-        <p role="alert" className="text-sm text-red-600">
-          Data belum terkirim. Coba lagi sebentar lagi.
-        </p>
-      )}
 
       <button
         type="submit"

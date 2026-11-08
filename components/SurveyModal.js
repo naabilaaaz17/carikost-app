@@ -6,6 +6,18 @@ import { CITY_OPTIONS } from "../data/kos";
 
 const EMPTY = { nama: "", hp: "", kota: "", email: "" };
 
+// Nama field di form (Indonesia) -> nama field di API (Inggris)
+const TO_API = { nama: "name", hp: "phone", kota: "city", email: "email" };
+
+// Ubah { name, phone, ... } dari server menjadi { nama, hp, ... } untuk form.
+function fromApiErrors(fields = {}) {
+  const out = {};
+  for (const [formKey, apiKey] of Object.entries(TO_API)) {
+    if (fields[apiKey]) out[formKey] = fields[apiKey];
+  }
+  return out;
+}
+
 const inputClass = (invalid) =>
   `mt-1 block w-full rounded-lg border bg-white px-3 py-2.5 text-sm placeholder:text-plum-600/70 ${
     invalid ? "border-red-600" : "border-brand-200"
@@ -64,7 +76,12 @@ export default function SurveyModal() {
       res = await fetch("/api/survey", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          name: values.nama,
+          phone: values.hp,
+          city: values.kota,
+          email: values.email,
+        }),
       });
     } catch {
       setStatus("idle");
@@ -80,7 +97,7 @@ export default function SurveyModal() {
     }
 
     if (res.status === 201) {
-      setSaved(json?.data ?? null);
+      setSaved({ nama: values.nama.trim(), hp: values.hp.trim(), kota: values.kota });
       setValues(EMPTY);
       setStatus("success");
       return;
@@ -88,7 +105,7 @@ export default function SurveyModal() {
 
     setStatus("idle");
     if (res.status === 400) {
-      setFieldErrors(json?.fields ?? {});
+      setFieldErrors(fromApiErrors(json?.fields));
       setBanner(json?.error ?? "Data belum valid.");
     } else if (res.status === 409) {
       setFieldErrors({ hp: json?.error ?? "Nomor HP ini sudah mengajukan survei." });

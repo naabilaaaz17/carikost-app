@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { formatRupiah, getFinalPrice } from "../lib/format";
 
 // Contoh: 1850000 -> "Rp1,85jt", 950000 -> "Rp950rb"
@@ -23,35 +22,53 @@ function priceIcon(kos) {
   });
 }
 
-// Zoom otomatis supaya semua pin hasil filter terlihat.
-function FitBounds({ items }) {
-  const map = useMap();
-  useEffect(() => {
-    if (items.length === 0) return;
-    map.fitBounds(items.map((k) => [k.lat, k.lng]), { padding: [40, 40], maxZoom: 14 });
-  }, [items, map]);
-  return null;
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+function popupHtml(k) {
+  return `<strong>${escapeHtml(k.name)}</strong><br>${escapeHtml(k.district)}, ${escapeHtml(k.city)}<br>${escapeHtml(formatRupiah(getFinalPrice(k)))} /bulan`;
+}
+
+// Memakai Leaflet langsung (tanpa react-leaflet) supaya peta selalu dibuat dan
+// dihapus mengikuti siklus effect. Ini menghindari "Map container is being reused"
+// saat Strict Mode, HMR, atau halaman dipertahankan lalu ditampilkan lagi.
 export default function KosMap({ items }) {
-  return (
-    <MapContainer center={[-7.0, 110.4]} zoom={6} className="z-0 h-full w-full rounded-2xl">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <FitBounds items={items} />
-      {items.map((k) => (
-        <Marker key={k.id} position={[k.lat, k.lng]} icon={priceIcon(k)}>
-          <Popup>
-            <strong>{k.name}</strong>
-            <br />
-            {k.district}, {k.city}
-            <br />
-            {formatRupiah(getFinalPrice(k))} /bulan
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const layerRef = useRef(null);
+
+  // Buat peta sekali per mount, hapus saat unmount.
+  useEffect(() => {
+    const map = L.map(containerRef.current).setView([-7.0, 110.4], 6);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+    mapRef.current = map;
+    layerRef.current = L.layerGroup().addTo(map);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      layerRef.current = null;
+    };
+  }, []);
+
+  // Sinkronkan marker dan zoom setiap daftar kost berubah.
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = layerRef.current;
+    if (!map || !layer) return;
+
+    layer.clearLayers();
+    items.forEach((k) => {
+      L.marker([k.lat, k.lng], { icon: priceIcon(k) }).bindPopup(popupHtml(k)).addTo(layer);
+    });
+
+    if (items.length > 0) {
+      map.fitBounds(items.map((k) => [k.lat, k.lng]), { padding: [40, 40], maxZoom: 14 });
+    }
+  }, [items]);
+
+  return <div ref={containerRef} className="z-0 h-full w-full rounded-2xl" />;
 }
